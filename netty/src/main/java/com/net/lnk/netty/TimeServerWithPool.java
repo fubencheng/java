@@ -7,15 +7,19 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @tag one request need one thread handle
+ * @tag use thread pool deal with request
  *
  * @author Ben
  * @memo 2016年11月21日
  */
-public class TimeServer {
+public class TimeServerWithPool {
 
 	public static void main(String[] args) {
 		int port = 8081;
@@ -28,13 +32,17 @@ public class TimeServer {
 		}
 
 		ServerSocket server = null;
+		// create IO task thread pool
+		// TimeServerHandlerExecutorPool singleExecutor = new
+		// TimeServerHandlerExecutorPool(50, 1000);
+		NewTimeServerHandlerExecutorPool singleExecutor = new NewTimeServerHandlerExecutorPool(50, 1000);
 		try {
 			server = new ServerSocket(port);
 			System.out.println("Time server is start in port : " + port);
 			Socket socket = null;
 			while (true) {
 				socket = server.accept();
-				new Thread(new TimeServerHandle(socket)).start();
+				singleExecutor.execute(new TimeServerHandler(socket));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -52,10 +60,33 @@ public class TimeServer {
 	}
 }
 
-class TimeServerHandle implements Runnable {
+class TimeServerHandlerExecutorPool {
+	private ExecutorService executorService;
+
+	public TimeServerHandlerExecutorPool(int maxPoolSize, int queueSize) {
+		executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), maxPoolSize, 120L,
+				TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(queueSize));
+	}
+
+	public void execute(Runnable task) {
+		executorService.execute(task);
+	}
+
+}
+
+class NewTimeServerHandlerExecutorPool extends ThreadPoolExecutor {
+
+	public NewTimeServerHandlerExecutorPool(int maximumPoolSize, int queueSize) {
+		super(Runtime.getRuntime().availableProcessors(), maximumPoolSize, 120L, TimeUnit.SECONDS,
+				new SynchronousQueue<Runnable>());
+	}
+
+}
+
+class TimeServerHandler implements Runnable {
 	private Socket socket;
 
-	public TimeServerHandle(Socket socket) {
+	public TimeServerHandler(Socket socket) {
 		this.socket = socket;
 	}
 
@@ -67,13 +98,6 @@ class TimeServerHandle implements Runnable {
 			pw = new PrintWriter(socket.getOutputStream(), true);
 			String msg;
 			String currentTime;
-
-			try {
-				TimeUnit.SECONDS.sleep(5L);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-
 			while ((msg = br.readLine()) != null) {
 				System.out.println("Time server received message : " + msg);
 				currentTime = "QUERY TIME ORDER".equalsIgnoreCase(msg) ? new Date(System.currentTimeMillis()).toString()

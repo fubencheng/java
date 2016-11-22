@@ -17,5 +17,10 @@
 			<artifactId>netty-all</artifactId>
 			<version>4.1.6.Final</version>
 		</dependency>
+		<dependency>
+			<groupId>com.luhuiguo</groupId>
+			<artifactId>chinese-utils</artifactId>
+			<version>1.0</version>
+		</dependency>
 	</dependencies>
 </project>
