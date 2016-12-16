@@ -14,11 +14,12 @@ public class AIOTimeServer {
 
 	public static void main(String[] args) {
 		int port = 8081;
+
 		if (args != null && args.length > 0) {
 			try {
 				port = Integer.valueOf(args[0]);
 			} catch (NumberFormatException e) {
-				// do nothing, use default
+				// 采用默认值
 			}
 		}
 
@@ -29,8 +30,8 @@ public class AIOTimeServer {
 
 class AsyncTimeServerHandler implements Runnable {
 
-	public AsynchronousServerSocketChannel asyncChannel;
-	public CountDownLatch latch;
+	AsynchronousServerSocketChannel asyncChannel;
+	CountDownLatch latch;
 
 	public AsyncTimeServerHandler(int port) {
 		try {
@@ -39,7 +40,6 @@ class AsyncTimeServerHandler implements Runnable {
 			System.out.println("Time server is start in port : " + port);
 		} catch (IOException e) {
 			e.printStackTrace();
-			System.exit(1);
 		}
 	}
 
@@ -61,9 +61,9 @@ class AsyncTimeServerHandler implements Runnable {
 
 class AcceptCompletionHandler implements CompletionHandler<AsynchronousSocketChannel, AsyncTimeServerHandler> {
 
-	public void completed(AsynchronousSocketChannel result, AsyncTimeServerHandler timeServerHandler) {
+	public void completed(AsynchronousSocketChannel result, AsyncTimeServerHandler attachment) {
 		// loop accept new request
-		timeServerHandler.asyncChannel.accept(timeServerHandler, this);
+		attachment.asyncChannel.accept(attachment, this);
 		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		result.read(buffer, buffer, new ReadCompletionHandler(result));
 	}
@@ -79,7 +79,8 @@ class ReadCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
 	private AsynchronousSocketChannel socketChannel;
 
 	public ReadCompletionHandler(AsynchronousSocketChannel socketChannel) {
-		this.socketChannel = socketChannel;
+		if (this.socketChannel == null)
+			this.socketChannel = socketChannel;
 	}
 
 	public void completed(Integer result, ByteBuffer buffer) {
@@ -99,7 +100,7 @@ class ReadCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
 	}
 
 	private void doWrite(String resp) {
-		if (resp != null && resp.length() > 0) {
+		if (resp != null && resp.trim().length() > 0) {
 			byte[] bytes = resp.getBytes();
 			ByteBuffer writeBuffer = ByteBuffer.allocate(bytes.length);
 			writeBuffer.put(bytes);
@@ -107,6 +108,7 @@ class ReadCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
 			socketChannel.write(writeBuffer, writeBuffer, new CompletionHandler<Integer, ByteBuffer>() {
 
 				public void completed(Integer result, ByteBuffer buffer) {
+					// 如果没有发送完成，继续发送
 					if (buffer.hasRemaining()) {
 						socketChannel.write(buffer, buffer, this);
 					}

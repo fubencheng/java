@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class TimeClient {
+public class BIOTimeClient {
 
 	public static void main(String[] args) {
 		Socket socket = null;

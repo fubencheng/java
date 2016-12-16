@@ -11,11 +11,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @tag one request need one thread handle
- *
- * @author Ben
  * @memo 2016年11月21日
  */
-public class TimeServer {
+public class BIOTimeServer {
 
 	public static void main(String[] args) {
 		int port = 8081;

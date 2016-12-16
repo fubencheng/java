@@ -16,11 +16,12 @@ public class AIOTimeClient {
 			try {
 				port = Integer.valueOf(args[0]);
 			} catch (NumberFormatException e) {
-				// do nothing, use default
+				// 采用默认值
 			}
 		}
 
 		new Thread(new AsyncTimeClientHandler("127.0.0.1", port), "AIO-AsyncTimeClientHandler-001").start();
+
 	}
 
 }
@@ -44,7 +45,7 @@ class AsyncTimeClientHandler implements CompletionHandler<Void, AsyncTimeClientH
 
 	public void run() {
 		latch = new CountDownLatch(1);
-		socketChannel.connect(new InetSocketAddress(host, port));
+		socketChannel.connect(new InetSocketAddress(host, port), this, this);
 		System.out.println("Connect to host : " + host + ", port : " + port);
 		try {
 			latch.await();
@@ -59,7 +60,7 @@ class AsyncTimeClientHandler implements CompletionHandler<Void, AsyncTimeClientH
 		}
 	}
 
-	public void completed(Void result, AsyncTimeClientHandler clientHandler) {
+	public void completed(Void result, AsyncTimeClientHandler attachment) {
 		byte[] req = "QUERY TIME ORDER".getBytes();
 		ByteBuffer writeBuffer = ByteBuffer.allocate(req.length);
 		writeBuffer.put(req);
@@ -107,7 +108,6 @@ class AsyncTimeClientHandler implements CompletionHandler<Void, AsyncTimeClientH
 				}
 			}
 		});
-
 	}
 
 	public void failed(Throwable exc, AsyncTimeClientHandler clientHandler) {

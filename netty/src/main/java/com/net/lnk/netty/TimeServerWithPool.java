@@ -15,8 +15,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @tag use thread pool deal with request
- *
- * @author Ben
  * @memo 2016年11月21日
  */
 public class TimeServerWithPool {
