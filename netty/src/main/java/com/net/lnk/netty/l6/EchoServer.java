@@ -4,8 +4,8 @@ import java.util.List;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -42,8 +42,8 @@ public class EchoServer {
 			b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class).option(ChannelOption.SO_BACKLOG, 100)
 					.handler(new LoggingHandler(LogLevel.INFO)).childHandler(new ChannelInitializer<SocketChannel>() {
 						protected void initChannel(SocketChannel ch) throws Exception {
-							ch.pipeline().addLast("msgpackEncoder", new MsgpackEncoder(Boolean.FALSE));
 							ch.pipeline().addLast("msgpackDecoder", new MsgpackDecoder());
+							ch.pipeline().addLast("msgpackEncoder", new MsgpackEncoder());
 							ch.pipeline().addLast(new EchoServerHandler());
 						}
 					});
@@ -64,18 +64,12 @@ public class EchoServer {
 	}
 }
 
-class EchoServerHandler extends ChannelHandlerAdapter {
+class EchoServerHandler extends ChannelInboundHandlerAdapter {
 
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		 @SuppressWarnings("unchecked")
-		 List<UserBean> users = (List<UserBean>) msg;
-		 for (UserBean user : users) {
-		 System.out.println("Receive the msgpack message : " + user);
-		 ctx.write(users);
-		 }
-
-//		UserBean user = (UserBean) msg;
-//		System.out.println("Receive the msgpack message : " + user);
+		@SuppressWarnings("unchecked")
+		List<UserBean> users = (List<UserBean>) msg;
+		System.out.println("Receive the msgpack message : " + users);
 	}
 
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {

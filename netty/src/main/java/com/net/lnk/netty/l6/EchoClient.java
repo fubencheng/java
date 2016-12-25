@@ -1,9 +1,12 @@
 package com.net.lnk.netty.l6;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -15,12 +18,10 @@ public class EchoClient {
 
 	private final String host;
 	private final int port;
-	private int sendNumber;
 
-	public EchoClient(String host, int port, int sendNumber) {
+	public EchoClient(String host, int port) {
 		this.host = host;
 		this.port = port;
-		this.sendNumber = sendNumber;
 	}
 
 	public static void main(String[] args) {
@@ -34,7 +35,7 @@ public class EchoClient {
 			}
 		}
 
-		new EchoClient("127.0.0.1", port, 10).connect();
+		new EchoClient("127.0.0.1", port).connect();
 	}
 
 	public void connect() {
@@ -50,9 +51,9 @@ public class EchoClient {
 
 						@Override
 						protected void initChannel(SocketChannel ch) throws Exception {
-							ch.pipeline().addLast("msgpackEncoder", new MsgpackEncoder(Boolean.FALSE));
 							ch.pipeline().addLast("msgpackDecoder", new MsgpackDecoder());
-							ch.pipeline().addLast(new EchoClientHandler(sendNumber));
+							ch.pipeline().addLast("msgpackEncoder", new MsgpackEncoder());
+							ch.pipeline().addLast(new EchoClientHandler());
 						}
 					});
 			// 发起异步连接操作
@@ -71,20 +72,19 @@ public class EchoClient {
 	}
 }
 
-class EchoClientHandler extends ChannelHandlerAdapter {
-	private final int sendNumber;
-
-	public EchoClientHandler(int sendNumber) {
-		this.sendNumber = sendNumber;
-	}
+class EchoClientHandler extends ChannelInboundHandlerAdapter {
 
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		UserBean user = null;
-		for (int i = 0; i < sendNumber; i++) {
-			user = new UserBean("abcdefg" + i, i);
-			ctx.write(user);
+		UserBean user = new UserBean("abcdefg", 111);
+		ctx.writeAndFlush(user);
+
+		List<UserBean> users = new ArrayList<UserBean>();
+		for (int i = 0; i < 10; i++) {
+			UserBean u = new UserBean("abcdefg" + i, 111 + i);
+			users.add(u);
 		}
-		ctx.flush();
+
+		ctx.writeAndFlush(users);
 	}
 
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
